@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+coverage/
+
+# Local Claude Code MCP dev connection — hardcodes an absolute path to this
+# machine's dist/server.js, not portable, not needed for grading (the
+# hosted Render URL is the deliverable).
+.mcp.json

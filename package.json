@@ -1,0 +1,36 @@
+{
+  "name": "commerce-ops-mcp",
+  "version": "0.1.0",
+  "description": "AI-native commerce operations investigator: a delayed-order investigation MCP server.",
+  "keywords": [
+    "ecommerce",
+    "commerce-operations",
+    "mcp"
+  ],
+  "license": "MIT",
+  "author": "Yashraj",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsup src/mcp/server.ts src/mcp/http.ts --format esm --target es2022 --out-dir dist --clean",
+    "start": "node dist/server.js",
+    "start:http": "node dist/http.js"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/node": "^26.1.2",
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2",
+    "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "express": "^5.2.1",
+    "zod": "^4.4.3"
+  }
+}
