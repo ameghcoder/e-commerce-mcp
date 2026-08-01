@@ -123,6 +123,11 @@ own memory of the session:
     category (`payment_issue`, `inventory_shortage`, `cancelled`, plus the
     not-found error path) and checked against the expected values in
     `docs/test-scenarios.md`.
+- The `/mcp` rate limiter (`src/mcp/http.ts`, `docs/decisions.md`) was
+  exercised by building `dist/http.js` and firing 65 rapid POST requests at
+  a locally running instance: the first 60 returned `200`, the remaining 5
+  returned `429` with the expected JSON-RPC error body — confirming the
+  per-IP window works end-to-end, not just that the middleware is wired in.
 - **[fill in]** Any manual read-through or spot-check you did yourself of
   AI-written code, beyond the automated tests — e.g. reviewing the
   diagnosis rule ordering in `delay-diagnosis.service.ts` for logical

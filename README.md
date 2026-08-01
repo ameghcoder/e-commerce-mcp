@@ -97,7 +97,9 @@ npx @modelcontextprotocol/inspector
 
 The server is stateless and unauthenticated (read-only synthetic data only —
 see `docs/decisions.md` for that tradeoff, stated explicitly rather than
-left implicit).
+left implicit). The `/mcp` endpoint is rate-limited to 60 requests per IP
+per minute (in-memory, per-instance — see `docs/decisions.md`) as a basic
+abuse guard given the lack of authentication.
 
 ## Running locally
 
@@ -156,7 +158,9 @@ inventory shortage, fulfillment delay, etc.) — see
 - No authentication/authorization on the hosted HTTP endpoint — deliberate
   and disclosed, not an oversight; see `docs/decisions.md`. Acceptable here
   because the tool set is read-only and the data is synthetic; would need
-  revisiting before any real data touched this server.
+  revisiting before any real data touched this server. Mitigated in part by
+  a per-IP rate limit (60 req/min, in-memory) on `/mcp`, but that limits
+  abuse per-instance only, not a substitute for real auth.
 - No real external integrations of any kind.
 
 ## Future stages

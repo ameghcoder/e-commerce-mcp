@@ -197,6 +197,35 @@ data, not mutating anything. This tradeoff would need revisiting (API key or
 OAuth per the MCP spec's auth extension) before any real, non-synthetic data
 touched this server.
 
+## Per-IP rate limiting on the hosted HTTP endpoint, in-memory store
+
+**Decision:** `src/mcp/http.ts` applies `express-rate-limit` to the `/mcp`
+route: 60 requests per IP per 60-second window, using the package's default
+in-memory `MemoryStore` (no Redis or other external store). `app.set("trust
+proxy", 1)` is set so the limiter keys on the real client IP forwarded by
+Render's single reverse-proxy hop, rather than the proxy's own IP for every
+request.
+
+**Reason:** The hosted endpoint is deliberately unauthenticated (see the
+transport decision above) — read-only synthetic data is an acceptable
+blast radius, but unlimited request volume from a single caller is not,
+even against fake data, since it's still a denial-of-service vector against
+a free-tier instance shared by every caller. `express-rate-limit` was
+already present as a transitive dependency of
+`@modelcontextprotocol/sdk` (it backs the SDK's own OAuth handlers), so
+depending on it directly adds no new supply-chain surface. An in-memory
+store is the right fit for "local-based cache" rate limiting on a single
+free-tier instance with no other shared infrastructure; it would need to
+move to a shared store (e.g. Redis) if this service ever ran as more than
+one instance, since counters wouldn't be shared across processes.
+
+**Trade-off, stated explicitly:** this limits abuse per-instance, not
+globally, and resets on every deploy/restart (in-memory state, not
+persisted). Good enough for a single free-tier Render instance serving
+synthetic demo data; would need revisiting (shared store, per-tool
+limits, or real auth) before this pattern is reused for anything with
+real traffic or real data.
+
 ## Package manager: npm, not pnpm
 
 **Decision:** Use `npm run <script>` (the instructions suggested
