@@ -5,8 +5,8 @@ read-only investigation tools, served over both local stdio and remote
 Streamable HTTP (hosted on Render). No write/action tool yet — see
 "Current limitations".**
 
-**Hosted MCP URL:** `<RENDER_URL_PLACEHOLDER>/mcp` (Streamable HTTP,
-stateless — see "Connecting to the hosted server" below)
+**Hosted MCP URL:** `https://e-commerce-mcp.onrender.com/mcp` (Streamable
+HTTP, stateless — see "Connecting to the hosted server" below)
 
 Working name: `commerce-ops-mcp` (may change before final delivery).
 
@@ -85,7 +85,7 @@ No local setup is required to try the deployed workflow — point any MCP
 client that supports Streamable HTTP at:
 
 ```
-<RENDER_URL_PLACEHOLDER>/mcp
+https://e-commerce-mcp.onrender.com/mcp
 ```
 
 For example, with the MCP Inspector:
