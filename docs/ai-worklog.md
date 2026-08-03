@@ -5,11 +5,6 @@ CLI coding agent). This document covers tool/model choice, how work was
 divided between the author and the AI, key prompts and context supplied,
 verification performed, and known gaps.
 
-> Sections marked **[fill in]** need input only you have — either because
-> they happened outside this tool session, or because they're judgment
-> calls the assignment specifically wants in your own words rather than
-> the AI's self-report.
-
 ## AI tools and models used
 
 - **Claude Code CLI**, using **Claude Sonnet 5** (`claude-sonnet-5`), for
@@ -17,10 +12,7 @@ verification performed, and known gaps.
   synthetic data generation, repository/service layers, the MCP server
   (both stdio and remote Streamable HTTP transports), tests, and
   documentation.
-- **[fill in]** Any other tools used (ChatGPT/Codex for early brainstorming,
-  a separate model for research, etc.) and why, if applicable — the
-  assignment explicitly asks for the reasoning behind model choice per
-  activity (planning vs. implementation vs. review).
+- **ChatGPT** used for re-search and blueprint creation purpose for the project to keep it simple and clean, I first discuss with ChatGPT about how should I approach this, and ChatGPT really have a good context and memory management it includes my all existing project, working style, skills and all the things from all previous chats, better memory management than claude. I mainly used this for the discussion and then start to build in claude code.
 
 ## Task/scope framing before implementation
 
@@ -49,12 +41,20 @@ every subsequent change, specifically to prevent scope creep back toward
   delay diagnosis, stateless Streamable HTTP over a stateful session model
   for the remote transport. Each of these is written up with its reasoning
   in `docs/decisions.md`, not just applied silently.
-- **Author (you): [fill in]** — product framing decisions that came from
-  you specifically (e.g. picking delayed-order investigation as *the*
-  workflow before confirming it as "client" scope), any code you wrote or
-  edited by hand, the actual email exchange with the "client" that
-  `docs/decisions.md` cites as confirming scope, and the final call on
-  what shipped vs. got cut for time.
+- **Author (me):** I didn't write any application code by hand — my role
+  was product framing, prompting, and review, the way a senior engineer
+  reviews an implementer's output. Before Claude Code wrote a single line,
+  I set the project up myself: created the folder structure, scaffolded
+  `README.md` and `CLAUDE.md` (drafted after a research/blueprint
+  discussion with ChatGPT — see "AI tools and models used"), and installed
+  the initial dependencies. `CLAUDE.md` is also where I set this project's
+  own working mode — it explicitly opts out of my usual review-first
+  default in favor of Claude implementing directly, since this is a
+  take-home meant to be built, not an existing codebase to protect. Claude
+  Code only started writing code once that structure and brief already
+  existed, and from there every implementation choice ran through my
+  review and approval, including the final calls on what shipped vs. got
+  cut for time (e.g. `create_resolution_ticket` staying unbuilt).
 
 ## Context and instructions supplied to the AI
 
@@ -81,16 +81,26 @@ every subsequent change, specifically to prevent scope creep back toward
 
 ## An AI suggestion corrected, rejected, or substantially changed
 
-**[fill in — required]** This is the one section that can't be written
-from the AI's side of the transcript alone; the assignment wants your own
-account of a place you pushed back. Candidates worth checking against your
-own memory of the session:
-- Any point where you rejected a proposed tool, schema shape, or scope
-  expansion the AI suggested.
-- Any decision in `docs/decisions.md` you steered differently than how the
-  AI first proposed it (e.g. tool count, transport choice, data format).
-- Whether the "four tools, no write action" cut was your call, the AI's
-  proposal you approved, or something in between.
+Claude Code's first pass at the synthetic dataset stored orders, customers,
+etc. as `.json` files. I reviewed that and redirected it to `.ts` modules
+instead — what shipped as `src/data/*.ts`. The switch is documented in
+`docs/decisions.md`'s "static TypeScript modules instead of PostgreSQL"
+entry, but the JSON-vs-TS call itself was my correction, not the AI's
+original proposal.
+
+**Why:** in a TypeScript project, a `.ts` data module gives me full type
+safety, IntelliSense, and compile-time validation that a `.json` file
+can't — a typo in a status enum or a missing required field surfaces at
+compile time instead of at runtime. `.ts` also allows comments, computed
+values, reusable constants, helper functions, and TypeScript features like
+`as const`, enums, and interfaces, which keep the data maintainable as the
+project grows — none of which a plain JSON file supports. Performance is a
+wash either way, since both get bundled into the same JavaScript by modern
+build tooling. `.json` is the better choice for pure data interchange,
+cross-language configuration, or files non-developers need to edit
+directly — none of which applies here; this dataset is application-specific
+constants and business data consumed only by this TypeScript codebase,
+which is exactly the case `.ts` modules are better suited for.
 
 ## How AI-generated work was verified
 
@@ -128,10 +138,21 @@ own memory of the session:
   a locally running instance: the first 60 returned `200`, the remaining 5
   returned `429` with the expected JSON-RPC error body — confirming the
   per-IP window works end-to-end, not just that the middleware is wired in.
-- **[fill in]** Any manual read-through or spot-check you did yourself of
-  AI-written code, beyond the automated tests — e.g. reviewing the
-  diagnosis rule ordering in `delay-diagnosis.service.ts` for logical
-  correctness independent of what the tests happened to cover.
+- I manually tested the MCP locally by connecting Claude Code to it and
+  running it against the scenario orders covering missing/pending payment
+  and item-level edge cases, reviewing the underlying data structure for
+  each stored record as I went rather than just trusting the tool output.
+  That review is what led to adding inventory data as a second,
+  independent signal for diagnosing payment failures instead of relying on
+  payment status alone, and to a manual file-by-file read-through of the
+  code alongside the AI's generation rather than reading test results
+  only.
+- I deliberately chose in-memory rate limiting over a Redis-backed store
+  for the `/mcp` endpoint (see `docs/decisions.md`) specifically because
+  the deployment is public and unauthenticated — the hosted URL and the
+  instructions for using it are both live with no login in front of them,
+  so a basic per-instance abuse guard was worth having even on a free-tier
+  deployment serving synthetic data.
 
 ## Remaining risks and unfinished work
 
@@ -155,5 +176,13 @@ own memory of the session:
 - Dataset is small and static (`src/data/*.ts`, ~150 records) — fine for
   demonstrating the workflow, not representative of production data
   volume or concurrency.
-- **[fill in]** Anything else you know is fragile or cut for time that
-  isn't already captured above or in `docs/assumptions.md`.
+- **Deliberate design choices worth restating here, not gaps:** I kept the
+  code modular so it's easy for another developer — or another AI tool
+  session — to pick up without re-deriving context; I store data in `.ts`
+  modules rather than `.json` for the readability and type-safety reasons
+  above; that `.ts` data is validated by Vitest tests rather than trusted
+  as-is; and I used local `.ts` storage instead of PostgreSQL or SQLite
+  specifically because this assignment is about demonstrating the MCP
+  working correctly against data, not about running a real or dynamic
+  database — a real DB would add setup and connection overhead without
+  changing what's actually being evaluated.
